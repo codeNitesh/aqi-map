@@ -72,23 +72,31 @@
 import React, {useState, useEffect, useMemo, useCallback} from 'react';
 import Map, {Source, Layer, Popup} from 'react-map-gl';
 
-const geojson = {
-  type: 'FeatureCollection',
-  features: [
-    {type: 'Feature', geometry: {type: 'Point', coordinates: [-122.4, 37.8]}, properties: {name: "Nitesh 1"}},
-    {type: 'Feature', geometry: {type: 'Point', coordinates: [-125.4, 22.8]}, properties: {name: "Nitesh 2"}},
-    {type: 'Feature', geometry: {type: 'Point', coordinates: [-132.4, 54.8]}, properties: {name: "Nitesh 3"}},
-    {type: 'Feature', geometry: {type: 'Point', coordinates: [-142.4, 87.8]}, properties: {name: "Nitesh 4"}},
-    {type: 'Feature', geometry: {type: 'Point', coordinates: [-182.4, 17.8]}, properties: {name: "Nitesh 5"}},
-  ]
-};
+// const geojson = {
+//   type: 'FeatureCollection',
+//   features: [
+//     {type: 'Feature', geometry: {type: 'Point', coordinates: [75.6752396, 22.6247578]}, properties: {name: "Nitesh 1"}},
+//     {type: 'Feature', geometry: {type: 'Point', coordinates: [-125.4, 22.8]}, properties: {name: "Nitesh 2"}},
+//     {type: 'Feature', geometry: {type: 'Point', coordinates: [-132.4, 54.8]}, properties: {name: "Nitesh 3"}},
+//     {type: 'Feature', geometry: {type: 'Point', coordinates: [-142.4, 87.8]}, properties: {name: "Nitesh 4"}},
+//     {type: 'Feature', geometry: {type: 'Point', coordinates: [-182.4, 17.8]}, properties: {name: "Nitesh 5"}},
+//   ]
+// };
 
 const layerStyle = {
   id: 'data',
   type: 'circle', // CHECK FOR IMAGE...
   paint: {
     'circle-radius': 10, // CHECK FOR IMAGE...
-    'circle-color': '#007cbf' // CHECK FOR IMAGE...
+    
+    'circle-color': [
+      "step", ["get", "aqi"],
+      "white", 0,
+      "green", 40,
+      "yellow", 70,
+      "red" 
+    ]
+    
   },
  
 };
@@ -100,6 +108,8 @@ const MAPBOX_TOKEN = 'pk.eyJ1IjoiYWlkYXNoLWl2bXMiLCJhIjoiY2s5MmFoaXZkMDJqaTN0b3R
 export default function App() {
   const [viewport, setViewport] = React.useState();
   const [showPopup, setShowPopup] = React.useState(false);
+  const [geojson, setGeojson] = React.useState(null);
+
 
   const tooltipStyle = {
     position: 'absolute',
@@ -113,9 +123,29 @@ export default function App() {
     pointerEvents: 'none'
   }
 
+
+  useEffect(()=>{
+    getLatestAQIData()
+  }, [])
+
   const data = useMemo(() => {
     return geojson
   }, [geojson]);
+
+  const getLatestAQIData = ()=>{
+    fetch("http://localhost:3003/aqi/?date=2023-02-16")
+      .then(res=> res.json())
+      .then(
+        (result)=>{
+          delete result.data[0].message;
+          setGeojson(result.data[0])
+        },
+        (error)=>{
+          console.log(error)
+        }
+      )
+  }
+
 
   const [popupInfo, setPopupInfo] = useState(null)
 
@@ -131,7 +161,14 @@ export default function App() {
     } 
 
     const pointData = {
-      properties: {name: features[0].properties.name},
+      properties: {
+        name: features[0].properties.name, 
+        aqi: features[0].properties.aqi,
+        date: features[0].properties.date,
+        pm25: features[0].properties.pm25,
+        pm10: features[0].properties.pm10,
+        o3: features[0].properties.o3,
+      },
       geometry: {longitude: lngLat.lng, latitude: lngLat.lat},
       points: event.point
     }
@@ -146,9 +183,9 @@ export default function App() {
   return (
     <div style={{height: '100vh'}}>
     <Map initialViewState={{
-      longitude: -122.45,
-      latitude: 37.78,
-      zoom: 3,
+      longitude: 78.069710,
+      latitude: 22.679079,
+      zoom: 4,
     }}
     style={{position: 'relative'}}
     interactiveLayerIds={['data']}
@@ -156,15 +193,19 @@ export default function App() {
     mapStyle="mapbox://styles/aidash-ivms/ck92al8tf1z6d1ik4hup8wwp8"
     mapboxAccessToken={MAPBOX_TOKEN}>
       <Source id="data" type="geojson" data={data}>
-        <Layer type="symbol"
-  layout={{ "icon-image": "harbor-15" }} {...layerStyle} />
+        <Layer type="symbol" {...layerStyle} />
       </Source>
 
       {showPopup && (
        
 
           <div className="tooltip" style={{...tooltipStyle, left: popupInfo.points.x, top: popupInfo.points.y}}>
-            <p>Here please, {popupInfo.properties.name}</p>
+            <p>Station Name: {popupInfo.properties.name}</p>
+            <p>AQI: {popupInfo.properties.aqi}</p>
+            <p>Date: {popupInfo.properties.date}</p>
+            <p>pm25: {popupInfo.properties.pm25}</p>
+            <p>pm10: {popupInfo.properties.pm10}</p>
+            <p>o3: {popupInfo.properties.o3}</p>
           </div>
         )}
     </Map>
