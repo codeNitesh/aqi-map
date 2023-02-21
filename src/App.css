@@ -3,14 +3,12 @@
     height: 100vh;
 }
 
-.tooltip {
-    position: absolute !important;
-    margin: 8px !important;
-    padding: 4px !important;
-    background: rgba(0, 0, 0, 0.8) !important;
-    color: #fff !important;
-    max-width: 300px !important;
-    font-size: 10px !important;
-    z-index: 100 !important;
-    pointer-events: none !important;
+p {
+    font-size: .9rem !important;
+    font-weight: 500;
+}
+
+span {
+    font-size: 1.1rem !important;
+    font-weight: 550;
 }

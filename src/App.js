@@ -1,104 +1,24 @@
-// import * as React from 'react';
-// import {useState, useEffect, useMemo, useCallback} from 'react';
-// import {render} from 'react-dom';
-// import Map, {Source, Layer} from 'react-map-gl';
-// // import ControlPanel from './control-panel';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Map, { Source, Layer, Popup } from 'react-map-gl';
+import './App.css'
+import "react-datepicker/dist/react-datepicker.css";
+import Tooltip from './components/Tooltip';
+import DateSelector from './components/DateSelector';
 
-// import {dataLayer} from './components/map-style';
-// import {updatePercentiles} from './components/utils';
-
-// const MAPBOX_TOKEN = 'pk.eyJ1IjoiYWlkYXNoLWl2bXMiLCJhIjoiY2s5MmFoaXZkMDJqaTN0b3R0MXp2ZW9vaCJ9.vHhKgvClj48SJpFwjSdgug'; // Set your mapbox token here
-
-// export default function App() {
-//   const [year, setYear] = useState(2015);
-//   const [allData, setAllData] = useState(null);
-//   const [hoverInfo, setHoverInfo] = useState(null);
-
-//   useEffect(() => {
-//     /* global fetch */
-//     fetch(
-//       'https://raw.githubusercontent.com/uber/react-map-gl/master/examples/.data/us-income.geojson'
-//     )
-//       .then(resp => resp.json())
-//       .then(json => setAllData(json))
-//       .catch(err => console.error('Could not load data', err)); // eslint-disable-line
-//   }, []);
-
-//   const onHover = useCallback(event => {
-//     const {
-//       features,
-//       point: {x, y}
-//     } = event;
-//     const hoveredFeature = features && features[0];
-
-//     // prettier-ignore
-//     setHoverInfo(hoveredFeature && {feature: hoveredFeature, x, y});
-//   }, []);
-
-//   const data = useMemo(() => {
-//     return allData && updatePercentiles(allData, f => f.properties.income[year]);
-//   }, [allData, year]);
-
-//   return (
-//     <div style={{height: '80vh'}}>
-//       <Map
-//         initialViewState={{
-//           latitude: 40,
-//           longitude: -100,
-//           zoom: 3
-//         }}
-//         mapStyle="mapbox://styles/mapbox/light-v9"
-//         mapboxAccessToken={MAPBOX_TOKEN}
-//         interactiveLayerIds={['data']}
-//         onMouseMove={onHover}
-//       >
-//         <Source type="geojson" data={data}>
-//           <Layer {...dataLayer} />
-//         </Source>
-//         {hoverInfo && (
-//           <div className="tooltip" style={{left: hoverInfo.x, top: hoverInfo.y}}>
-//             <div>State: {hoverInfo.feature.properties.name}</div>
-//             <div>Median Household Income: {hoverInfo.feature.properties.value}</div>
-//             <div>Percentile: {(hoverInfo.feature.properties.percentile / 8) * 100}</div>
-//           </div>
-//         )}
-//       </Map>
-
-//       {/* <ControlPanel year={year} onChange={value => setYear(value)} /> */}
-//     </div>
-//   );
-// }
-
-import React, {useState, useEffect, useMemo, useCallback} from 'react';
-import Map, {Source, Layer, Popup} from 'react-map-gl';
-
-// const geojson = {
-//   type: 'FeatureCollection',
-//   features: [
-//     {type: 'Feature', geometry: {type: 'Point', coordinates: [75.6752396, 22.6247578]}, properties: {name: "Nitesh 1"}},
-//     {type: 'Feature', geometry: {type: 'Point', coordinates: [-125.4, 22.8]}, properties: {name: "Nitesh 2"}},
-//     {type: 'Feature', geometry: {type: 'Point', coordinates: [-132.4, 54.8]}, properties: {name: "Nitesh 3"}},
-//     {type: 'Feature', geometry: {type: 'Point', coordinates: [-142.4, 87.8]}, properties: {name: "Nitesh 4"}},
-//     {type: 'Feature', geometry: {type: 'Point', coordinates: [-182.4, 17.8]}, properties: {name: "Nitesh 5"}},
-//   ]
-// };
 
 const layerStyle = {
   id: 'data',
   type: 'circle', // CHECK FOR IMAGE...
   paint: {
     'circle-radius': 10, // CHECK FOR IMAGE...
-    
     'circle-color': [
       "step", ["get", "aqi"],
       "white", 0,
       "green", 40,
       "yellow", 70,
-      "red" 
+      "red"
     ]
-    
   },
- 
 };
 
 
@@ -106,201 +26,135 @@ const MAPBOX_TOKEN = 'pk.eyJ1IjoiYWlkYXNoLWl2bXMiLCJhIjoiY2s5MmFoaXZkMDJqaTN0b3R
 
 
 export default function App() {
-  const [viewport, setViewport] = React.useState();
   const [showPopup, setShowPopup] = React.useState(false);
   const [geojson, setGeojson] = React.useState(null);
 
+  const [startDate, setStartDate] = useState(new Date("2023-02-17"));
+  const [endDate, setEndDate] = useState(new Date("2023-02-17"));
 
-  const tooltipStyle = {
-    position: 'absolute',
-    margin: '8px',
-    padding: '4px',
-    background: 'white',
-    color: 'black',
-    maxWidth: '300px',
-    fontSize: '15px',
-    zIndex: 100,
-    pointerEvents: 'none'
-  }
-
-
-  useEffect(()=>{
+  useEffect(() => {
     getLatestAQIData()
   }, [])
 
   const data = useMemo(() => {
+    console.log(geojson)
     return geojson
   }, [geojson]);
 
-  const getLatestAQIData = ()=>{
-    fetch("http://localhost:3003/aqi/?date=2023-02-16")
-      .then(res=> res.json())
+
+
+  async function delay(ms) {
+    return await new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  const getLatestAQIData = async () => {
+    setGeojson(null)
+    const date1 = new Date(startDate);
+    const date2 = new Date(endDate);
+
+    let day1 = date1.getDate();
+    let month1 = date1.getMonth() + 1;
+    let year1 = date1.getFullYear();
+
+    let sDate = year1 + "-" + month1 + "-" + day1;
+
+    let day2 = date2.getDate();
+    let month2 = date2.getMonth() + 1;
+    let year2 = date2.getFullYear();
+    let eDate = year2 + "-" + month2 + "-" + day2;
+
+    fetch("http://localhost:3003/aqi/range?date1=" + sDate + "&date2=" + eDate)
+      .then(res => res.json())
       .then(
-        (result)=>{
-          delete result.data[0].message;
-          setGeojson(result.data[0])
+        async (result) => {
+          if (result.message === "ok") {
+            let index = 0;
+            let loop = 0;
+            const data = result.data;
+            console.log(data.length)
+            if (data.length === 1) {
+              setGeojson(data[0])
+              return;
+            }
+
+            while (loop < 10) {
+              index++;
+              loop++;
+              setGeojson(data[index % data.length])
+              await delay(5000)
+            }
+          } else {
+            alert("Error... Showing old data.")
+          }
         },
-        (error)=>{
+        (error) => {
           console.log(error)
         }
       )
   }
 
-
   const [popupInfo, setPopupInfo] = useState(null)
+
 
   const handlePointClick = useCallback(event => {
     const {
       features,
-      point: {x, y},
+      point: { x, y },
       lngLat
     } = event;
-    if(features.length === 0){
+    if (features.length === 0) {
       setShowPopup(false)
       return;
-    } 
+    }
 
     const pointData = {
       properties: {
-        name: features[0].properties.name, 
+        name: features[0].properties.name,
         aqi: features[0].properties.aqi,
         date: features[0].properties.date,
         pm25: features[0].properties.pm25,
         pm10: features[0].properties.pm10,
         o3: features[0].properties.o3,
       },
-      geometry: {longitude: lngLat.lng, latitude: lngLat.lat},
+      geometry: { longitude: lngLat.lng, latitude: lngLat.lat },
       points: event.point
     }
     setPopupInfo(pointData);
     setShowPopup(true)
   }, []);
 
-  useEffect(()=>{
-    console.log(popupInfo)
-  }, [popupInfo])
+
+  useEffect(() => {
+    getLatestAQIData();
+  }, [startDate, endDate])
+
+  const onStartDateChange = (date) => {
+    setStartDate(date)
+  }
+  const onEndDateChange = (date) => {
+    setEndDate(date)
+  }
 
   return (
-    <div style={{height: '100vh'}}>
-    <Map initialViewState={{
-      longitude: 78.069710,
-      latitude: 22.679079,
-      zoom: 4,
-    }}
-    style={{position: 'relative'}}
-    interactiveLayerIds={['data']}
-    onClick={handlePointClick}
-    mapStyle="mapbox://styles/aidash-ivms/ck92al8tf1z6d1ik4hup8wwp8"
-    mapboxAccessToken={MAPBOX_TOKEN}>
-      <Source id="data" type="geojson" data={data}>
-        <Layer type="symbol" {...layerStyle} />
-      </Source>
+    <div style={{ height: '100vh' }}>
+      <DateSelector startDate={startDate} endDate={endDate} onStartDateChange={onStartDateChange} onEndDateChange={onEndDateChange} />
 
-      {showPopup && (
-       
+      <Map initialViewState={{
+        longitude: 78.069710,
+        latitude: 22.679079,
+        zoom: 4,
+      }}
+        style={{ position: 'relative' }}
+        interactiveLayerIds={['data']}
+        onClick={handlePointClick}
+        mapStyle="mapbox://styles/aidash-ivms/ck92al8tf1z6d1ik4hup8wwp8"
+        mapboxAccessToken={MAPBOX_TOKEN}>
+        <Source id="data" type="geojson" data={data}>
+          <Layer type="symbol" {...layerStyle} />
+        </Source>
 
-          <div className="tooltip" style={{...tooltipStyle, left: popupInfo.points.x, top: popupInfo.points.y}}>
-            <p>Station Name: {popupInfo.properties.name}</p>
-            <p>AQI: {popupInfo.properties.aqi}</p>
-            <p>Date: {popupInfo.properties.date}</p>
-            <p>pm25: {popupInfo.properties.pm25}</p>
-            <p>pm10: {popupInfo.properties.pm10}</p>
-            <p>o3: {popupInfo.properties.o3}</p>
-          </div>
-        )}
-    </Map>
+        <Tooltip showPopup={showPopup} popupInfo={popupInfo} />
+      </Map>
     </div>
   );
-
-  
 }
-
-
-// import * as React from 'react';
-// import {useState, useMemo} from 'react';
-// import {render} from 'react-dom';
-// import Map, {
-//   Marker,
-//   Popup,
-//   NavigationControl,
-//   FullscreenControl,
-//   ScaleControl,
-//   GeolocateControl
-// } from 'react-map-gl';
-
-// // import ControlPanel from './control-panel';
-// import Pin from './components/pin';
-
-// import CITIES from './components/cities.json';
-
-// const TOKEN = 'pk.eyJ1IjoiYWlkYXNoLWl2bXMiLCJhIjoiY2s5MmFoaXZkMDJqaTN0b3R0MXp2ZW9vaCJ9.vHhKgvClj48SJpFwjSdgug';
-
-// export default function App() {
-//   const [popupInfo, setPopupInfo] = useState(null);
-
-//   const pins = useMemo(
-//     () =>
-//       CITIES.map((city, index) => (
-//         <Marker
-//           key={`marker-${index}`}
-//           longitude={city.longitude}
-//           latitude={city.latitude}
-//           anchor="bottom"
-//           style={{position: 'absolute'}}
-//           onClick={e => {
-//             // If we let the click event propagates to the map, it will immediately close the popup
-//             // with `closeOnClick: true`
-//             e.originalEvent.stopPropagation();
-//             setPopupInfo(city);
-//           }}
-//         >
-//           <Pin />
-//         </Marker>
-//       )),
-//     []
-//   );
-
-//   return (
-//     <div style={{height: '100vh'}}>
-//       <Map
-//         initialViewState={{
-//           latitude: 37,
-//           longitude: -95,
-          
-//         }}
-        
-//         mapStyle="mapbox://styles/aidash-ivms/ck92al8tf1z6d1ik4hup8wwp8"
-//         mapboxAccessToken={TOKEN}
-//       >
-//         <GeolocateControl position="top-left" />
-//         <FullscreenControl position="top-left" />
-//         <NavigationControl position="top-left" />
-//         <ScaleControl />
-
-//         {pins}
-
-//         {popupInfo && (
-//           <Popup
-//             anchor="top"
-//             longitude={Number(popupInfo.longitude)}
-//             latitude={Number(popupInfo.latitude)}
-//             onClose={() => setPopupInfo(null)}
-//           >
-//             <div>
-//               {popupInfo.city}, {popupInfo.state} |{' '}
-//               <a
-//                 target="_new"
-//                 href={`http://en.wikipedia.org/w/index.php?title=Special:Search&search=${popupInfo.city}, ${popupInfo.state}`}
-//               >
-//                 Wikipedia
-//               </a>
-//             </div>
-//             <img width="100%" src={popupInfo.image} />
-//           </Popup>
-//         )}
-//       </Map>
-
-//       {/* <ControlPanel /> */}
-//     </div>
-//   );
-// }

@@ -11,9 +11,11 @@
     "json-loader": "^0.5.7",
     "mapbox-gl": "^2.12.1",
     "react": "^18.2.0",
+    "react-datepicker": "^4.10.0",
     "react-dom": "^18.2.0",
     "react-map-gl": "^7.0.21",
     "react-map-gl-geocoder": "^2.2.0",
+    "react-mapbox-gl": "^5.1.1",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
